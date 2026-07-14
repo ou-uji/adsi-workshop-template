@@ -1,0 +1,22 @@
+# --- Node / frontend ---
+node_modules/
+.next/
+out/
+npm-debug.log*
+*.tsbuildinfo
+
+# --- Java / Gradle (backend) ---
+.gradle/
+build/
+bin/
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- 環境変数（シークレット。security.md） ---
+.env
+.env.local
+.env*.local

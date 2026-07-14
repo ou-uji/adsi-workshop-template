@@ -1,0 +1,57 @@
+// 勤怠管理システム backend — Spring Boot 4.x
+// ※ 2026-07-14 実証済: SB 4.0.0 は依存解決 OK（Spring Framework 7.0.1 / Security 7.0.0 / Flyway 11.14.1 / H2 2.4.240）。
+//   SB4 互換規約は .claude/rules/java-spring-boot.md
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.0'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Web / REST
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 永続化（Spring Data JPA。DAO は使わず Repository に統一）
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // 認証（最小構成: SecurityFilterChain + BCrypt）
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // マイグレーション（ddl-auto 禁止 → Flyway で管理）
+    // SB4: Flyway 自動設定は spring-boot-autoconfigure から spring-boot-flyway に分離。starter で取り込む
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+
+    // DB（workshop: H2 インメモリ）
+    runtimeOnly 'com.h2database:h2'
+
+    // Lombok（Entity のみ。DTO は record）
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // テスト
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    // SB4: テストスライス（@DataJpaTest / @WebMvcTest）は技術別モジュール spring-boot-<tech>-test に分離された
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
