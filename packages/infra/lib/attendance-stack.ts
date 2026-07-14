@@ -12,9 +12,14 @@ export class AttendanceStack extends cdk.Stack {
 
     const prefix = "Team-MIH-MSYS-Kintai";
 
-    // Default VPC (workshop simplicity)
-    const vpc = ec2.Vpc.fromLookup(this, "DefaultVPC", {
-      isDefault: true,
+    // VPC（ワークショップ用 — 最小構成: 2 AZ, public subnet のみ）
+    const vpc = new ec2.Vpc(this, "VPC", {
+      vpcName: `${prefix}-VPC`,
+      maxAzs: 2,
+      natGateways: 0,
+      subnetConfiguration: [
+        { name: "Public", subnetType: ec2.SubnetType.PUBLIC, cidrMask: 24 },
+      ],
     });
 
     // ECS Cluster
