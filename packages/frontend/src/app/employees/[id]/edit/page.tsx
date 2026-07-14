@@ -11,7 +11,6 @@ type LoadState =
   | { status: "loaded"; employee: Employee }
   | { status: "error"; message: string };
 
-// 社員 編集ページ（ADMIN のみ）。{id} の現在値を取得してフォームに初期表示する。
 export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
