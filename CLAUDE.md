@@ -103,7 +103,9 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - [x] **共通基盤 SDD 設計書を作成**（ゲート②レビュー対象）→ `docs/design/common-foundation.md`
 - [x] **共通基盤 TDD の実装計画（Plan）を作成・承認**（tdd-implementation Phase 1）→ `docs/design/common-foundation-implementation-plan.md`
 - [x] **共通基盤 Phase 2（TDD 実装）完了**（起動 + 画面枠 + テスト5本緑・verify 通過）
-- [ ] **← 今ここ: main へマージ → 梶田さんに共有 → 分担スタート**
+- [x] **README.md 作成**（目標UI To-Be・起動/プレビュー手順・トラブルシュート）
+- [x] **develop へマージ・push 完了**（`feature/ou-draft-idea` → `develop` を fast-forward、commit `77f7ca7`）
+- [ ] **← 今ここ: 梶田さんに共有 → ゲート②レビュー → 分担スタート**
 - [ ] `work-decomposition` → `docs/units/unit_a|b|c.md`（依存図・Phase）
 - [ ] 午後 A → B を TDD → 結合 → `multi-agent-review`
 
@@ -125,6 +127,7 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - 実測版: SB 4.0.0 / Spring Framework 7.0.1 / Security 7.0.0 / Flyway 11.14.1 / H2 2.4.240 / Java 21.0.11 / Gradle 8.14.5 / Next 16.2.10
 
 ### 📁 成果物の場所
+- **README（起動手順・目標UI To-Be）**: [README.md](README.md)
 - **共通基盤 設計書（SDD）**: [docs/design/common-foundation.md](docs/design/common-foundation.md) ★ゲート②レビュー対象
 - 共通基盤 コード雛形: [packages/backend/src/main/java/com/example/attendance/common/](packages/backend/src/main/java/com/example/attendance/common/)
 - 確定要求: [docs/requirements/ou-attendance.md](docs/requirements/ou-attendance.md)
@@ -134,8 +137,9 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-1. （任意）`multi-agent-review` で共通基盤コードをレビュー → main へマージ
-2. 共通基盤コード＋設計書を梶田さんに共有し、**ゲート②（設計承認）**レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番を固定）＋設計書 §4 の `[Answer]` を埋める
+> 共通基盤は develop に反映済み（commit `77f7ca7`）。梶田さんは `git pull` → `npm run setup` → `npm run dev:sagemaker` で受け取れる。
+1. 梶田さんに共有し、**ゲート②（設計承認）**レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番を固定）＋設計書 §4 の `[Answer]` を埋める
+2. （任意）`multi-agent-review` で共通基盤コードをレビュー
 3. `work-decomposition` → `docs/units/unit_a|b|c.md` → 午後 A→B を TDD
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
