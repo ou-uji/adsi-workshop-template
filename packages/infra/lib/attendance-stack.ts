@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
@@ -41,7 +42,7 @@ export class AttendanceStack extends cdk.Stack {
     const backendContainer = backendTaskDef.addContainer("backend", {
       image: ecs.ContainerImage.fromAsset(
         path.join(__dirname, "../../backend"),
-        { file: "Dockerfile" }
+        { file: "Dockerfile", networkMode: ecr_assets.NetworkMode.custom("sagemaker") }
       ),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: `${prefix}-backend`,
@@ -83,7 +84,7 @@ export class AttendanceStack extends cdk.Stack {
     const frontendContainer = frontendTaskDef.addContainer("frontend", {
       image: ecs.ContainerImage.fromAsset(
         path.join(__dirname, "../../frontend"),
-        { file: "Dockerfile" }
+        { file: "Dockerfile", networkMode: ecr_assets.NetworkMode.custom("sagemaker") }
       ),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: `${prefix}-frontend`,
