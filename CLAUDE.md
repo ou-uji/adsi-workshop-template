@@ -10,7 +10,7 @@
 **勤怠管理システム（小規模デモ）** — Day 2 のチーム共同開発で「1 から作る」。
 スライド ⑥「チーム開発の考え方」を実践：**機能で分担 / つなぎ目(IF)を先に合意 / 共通基盤を先行**。
 
-- **ブランチ**: 共通基盤は `develop` に反映済み（commit `6f709b7`）。現在の作業ブランチ = **`feature/unit-a-employee`**（Unit A / develop 最新から分岐・push 済み）
+- **ブランチ**: `develop` に Unit A + D 結合済み。現在 = **`feature/IT_A_and_D`** → develop マージ完了
 - **実行環境**: AWS SageMaker Code Editor / `ml.t3.2xlarge`（8vCPU/32GiB）/ Image `code-editor-java-claude v3`
 - **チーム**: 経験者は代表（あなた）。他メンバーは Java 本格開発の経験が浅い → 「迷子にならない」を最優先
 - **デモゴール**: ログイン → 打刻 → 履歴 → 休暇1件申請 をブラウザ(absports)で通し実演（承認実演は余力があれば）
@@ -121,7 +121,10 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
   - **結合テスト** [docs/IT/auth-employee-integration.md](docs/IT/auth-employee-integration.md) / `integration/AuthEmployeeIntegrationTest`（commit `b752cd2`）: 実ログインセッションで社員 CRUD を通す **7 ケース全緑**（ADMIN 通し / MEMBER 403 / 未認証 401 / ログアウト後 401 / 不正ログイン 401 / 新社員ログイン）
   - **backend 全 48 tests 緑**（`--rerun-tasks` で裏取り済み）・frontend lint 通過
   - → 単体では 403 だった Unit A 社員 API が、認証（UserDetails=email+BCrypt + セッション）で通ることを実証
-- [ ] **← 今ここ: `feature/IT_A_and_D` を push → PR（develop へ）**。ゲート②（CSRF/CORS/H2 は Unit D で確定済み → 追認）
+- [x] **`feature/IT_A_and_D` を push → develop マージ完了**（2026-07-14 15:30 発表前）
+  - ブラウザ通し確認済み: ログイン → ダッシュボード → 社員管理（一覧/登録/編集）
+  - CSRF/CORS/H2 は Unit D で確定済み（CSRF disable・H2 frameOptions sameOrigin・401/403 JSON）
+- [ ] **← 今ここ: IaC（AWS デプロイ）着手**
 - [ ] B/C 結合 → 全体 `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
@@ -153,12 +156,10 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> Unit A + Unit D 認証を結合済み。作業ブランチ **`feature/IT_A_and_D`**（commit `b752cd2`）。backend 48 tests 緑。
-> Unit A 単体で 403 だった社員 API は、認証（UserDetails=email+BCrypt + セッション）を通して動くことを結合テストで実証済み。
-1. **← 今ここ: `feature/IT_A_and_D` を push → PR（develop へ）**
-   - ブラウザ通し確認（任意）: `npm run dev:sagemaker` → `/login` で **admin@example.com / `password`** → ダッシュボード → 社員管理 → `/employees/new` で 2 人目登録
-2. ゲート②: つなぎ目（employeeテーブル/Enum/API規約/Flyway連番）+ **CSRF/CORS/H2 は Unit D の `SecurityConfig` で確定済み**（CSRF disable・H2 frameOptions sameOrigin・401/403 JSON）→ 追認するだけ
-3. B/C 結合 → 全体 `multi-agent-review`
+> Unit A + D 結合済み・develop マージ済み。backend 48 tests 緑。ブラウザ通し確認済み。
+1. **← 今ここ: IaC（AWS デプロイ）着手** — CDK / ECS / S3+CloudFront でデモ環境を構築
+2. B/C 実装・結合（余力があれば）
+3. 全体 `multi-agent-review`
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
 > ⚠️ 認証テストの罠（Unit A/D で判明・次 Unit も同様）: SB4 の `@WebMvcTest`/`@SpringBootTest` は `@WithMockUser` を自動適用しない →
