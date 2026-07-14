@@ -1,0 +1,15 @@
+# workshop プロファイル — H2 インメモリ（Docker 不要）
+# 起動: npm run boot:workshop / SageMaker: dev:sagemaker が --spring.profiles.active=workshop で起動
+spring:
+  datasource:
+    url: jdbc:h2:mem:attendance;DB_CLOSE_DELAY=-1;MODE=LEGACY
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  h2:
+    console:
+      # 開発時のみ有効。本番想定では無効化する。
+      enabled: true
+      path: /h2-console
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect

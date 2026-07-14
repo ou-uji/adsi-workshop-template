@@ -98,12 +98,35 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - [x] **要求仕様 確定**（Q&A 解消済み）→ `docs/requirements/ou-attendance.md`
 - [x] メンバー案（梶田）と比較分析 → `docs/working/requirements/comparison-ou-vs-kajita.md`
 - [x] **実装方針 確定**（ou 案ベース / 最小機能 / 王=共通基盤→午後A→B）→ `docs/requirements/implementation-strategy.md`
-- [ ] **← 今ここ: 新セッションで `design` スキルへ（正式な設計に入る）**
-- [ ] `design` → 共通基盤 + A/B のドメイン/DB(Flyway)/API(OpenAPI)/画面
-- [ ] 共通基盤を実装（王・1台）→ 午後 A → B を TDD → 結合 → `multi-agent-review`
-- [ ] （任意）GitHub Issue 化（要約 + docs リンク）
+- [x] docs を develop へマージ（梶田さんに共有済み）
+- [x] **共通基盤の雛形＋構造を作成**（`packages/` monorepo scaffold・common/ 実体）
+- [x] **共通基盤 SDD 設計書を作成**（ゲート②レビュー対象）→ `docs/design/common-foundation.md`
+- [x] **共通基盤 TDD の実装計画（Plan）を作成・承認**（tdd-implementation Phase 1）→ `docs/design/common-foundation-implementation-plan.md`
+- [x] **共通基盤 Phase 2（TDD 実装）完了**（起動 + 画面枠 + テスト5本緑・verify 通過）
+- [ ] **← 今ここ: main へマージ → 梶田さんに共有 → 分担スタート**
+- [ ] `work-decomposition` → `docs/units/unit_a|b|c.md`（依存図・Phase）
+- [ ] 午後 A → B を TDD → 結合 → `multi-agent-review`
+
+### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
+- ✅ monorepo 構造: `packages/{backend,frontend,infra}` + ルート `package.json`（scripts 実体化済み）
+- ✅ common/ 実体: Enum(Role/LeaveType/LeaveStatus)・ErrorResponse(record)・GlobalExceptionHandler(@RestControllerAdvice)・例外2種(404/409)・SecurityConfig(@EnableWebSecurity・/api/health 許可)
+- ✅ Flyway: `V1__init_common.sql`（employee）+ `V1_1__seed_common.sql`（**BCrypt 実ハッシュ**・全員 pw="password"）
+- ✅ Employee Entity + EmployeeRepository（findByEmail/existsByEmail）
+- ✅ HealthController（`GET /api/health` → `{status:"ok"}`・起動確認用の共通 API）
+- ✅ テスト5本緑: contextLoads / EmployeeRepository×3(保存・email一意・空) / Health×1
+- ✅ frontend: Next.js scaffold + ダッシュボード枠 + `lib/api-client.ts`(withBasePath) + HealthBadge(zod)
+- ✅ SageMaker: `next.config.ts`(SAGEMAKER分岐/basePath/rewrites) + `scripts/sagemaker-proxy.mjs` + `scripts/dev-sagemaker.sh`
+- ✅ 起動実証: backend(8080/H2) 起動→Flyway V1+V1.1 適用→`/api/health` 200・保護ルート403 / 全スタック(proxy3000→next3001→backend8080)で `/api/health` 疎通確認
+
+### 🔑 SB4 で判明した重要な依存の差分（次 Unit も同様に必要）
+- テストスライス分離: `@DataJpaTest`→`spring-boot-data-jpa-test`（pkg `org.springframework.boot.data.jpa.test.autoconfigure`）/ `@WebMvcTest`→`spring-boot-webmvc-test`（pkg `org.springframework.boot.webmvc.test.autoconfigure`）
+- Flyway 自動設定は `spring-boot-starter-flyway`（`flyway-core` 単体では起動しない）
+- `@DataJpaTest` は `@AutoConfigureTestDatabase(replace=NONE)` を付け Flyway 管理スキーマを使う（組込DB置換を無効化）
+- 実測版: SB 4.0.0 / Spring Framework 7.0.1 / Security 7.0.0 / Flyway 11.14.1 / H2 2.4.240 / Java 21.0.11 / Gradle 8.14.5 / Next 16.2.10
 
 ### 📁 成果物の場所
+- **共通基盤 設計書（SDD）**: [docs/design/common-foundation.md](docs/design/common-foundation.md) ★ゲート②レビュー対象
+- 共通基盤 コード雛形: [packages/backend/src/main/java/com/example/attendance/common/](packages/backend/src/main/java/com/example/attendance/common/)
 - 確定要求: [docs/requirements/ou-attendance.md](docs/requirements/ou-attendance.md)
 - 実装方針: [docs/requirements/implementation-strategy.md](docs/requirements/implementation-strategy.md)
 - メンバー案（比較対象・To-Be）: [docs/requirements/kajita-attendance-management.md](docs/requirements/kajita-attendance-management.md)
@@ -111,5 +134,8 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-`design` スキルを呼ぶ → **まず共通基盤（common/ + 認証 D + Employee + Flyway V1）を設計** → 続けて A（V2）→ B（V3）。
-設計は本ファイルの「技術スタック / コード構造 / 仕様決定」を土台に具体化する。
+1. （任意）`multi-agent-review` で共通基盤コードをレビュー → main へマージ
+2. 共通基盤コード＋設計書を梶田さんに共有し、**ゲート②（設計承認）**レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番を固定）＋設計書 §4 の `[Answer]` を埋める
+3. `work-decomposition` → `docs/units/unit_a|b|c.md` → 午後 A→B を TDD
+
+> 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: attendance
+  jpa:
+    hibernate:
+      # ddl-auto は禁止（スキーマは Flyway で管理）
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080

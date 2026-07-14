@@ -1,0 +1,19 @@
+{
+  "name": "adsi-attendance",
+  "private": true,
+  "version": "0.0.1",
+  "description": "勤怠管理システム（Day 2 チーム開発）— monorepo ルート",
+  "workspaces": [
+    "packages/frontend",
+    "packages/infra"
+  ],
+  "scripts": {
+    "setup": "npm install && npm --workspace @adsi/frontend run build",
+    "boot:workshop": "cd packages/backend && ./gradlew bootRun --args='--spring.profiles.active=workshop'",
+    "dev": "npm --workspace @adsi/frontend run dev",
+    "dev:sagemaker": "bash scripts/dev-sagemaker.sh",
+    "dev:sagemaker:stop": "fuser -k 3000/tcp 3001/tcp 8080/tcp 2>/dev/null || true",
+    "check:backend": "cd packages/backend && ./gradlew check",
+    "lint:frontend": "npm --workspace @adsi/frontend run lint"
+  }
+}
