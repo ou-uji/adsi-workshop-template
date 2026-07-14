@@ -109,10 +109,15 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - [x] **セキュリティ積み残しを別機能に切り出し**（CSRF/CORS/H2=雛形TODO）→ `docs/design/security-hardening-todo.md`（commit `6f709b7`・develop push 済み）
 - [x] **梶田さんへ共有メッセージ送付**（受け取り手順・つなぎ目・ゲート②論点）
 - [x] **Unit A ブランチ作成・push**（`feature/unit-a-employee`、develop 最新から分岐）
-- [ ] **← 今ここ: Unit A（ユーザー管理）を SDD `design` から実装開始**（別 Window で作業）
+- [x] **Unit A（ユーザー管理）を SDD `design` → TDD `tdd-implementation` で実装完了**（2026-07-14）
+  - 設計(SDD)→ [docs/design/unit/a-employee-sdd-design.md](docs/design/unit/a-employee-sdd-design.md)（認可=メソッドセキュリティで確定）/ 実装計画(TDD)→ [docs/design/unit/a-employee-tdd-plan.md](docs/design/unit/a-employee-tdd-plan.md)
+  - スコープ: 社員 登録/一覧/取得/編集（すべて **ADMIN のみ** = `@PreAuthorize`）。認証実体・CSRF/CORS は別 Unit
+  - backend 29 tests 緑（Service10/Controller11/統合3 + 既存5）・frontend lint/build 通過
+  - **共通領域の変更は 2 点のみ**: `SecurityConfig` に `@EnableMethodSecurity` / `GlobalExceptionHandler` に `AccessDeniedException→403`
+- [x] **`multi-agent-review`（java/ts/security/test）→ Approve**（MEDIUM 1件=passwordHash JSON検証を取込・再テスト緑）→ [docs/design/unit/a-employee-review.md](docs/design/unit/a-employee-review.md)
+- [ ] **← 今ここ: Unit A を push** → 認証ユニット（別メンバー実装済み）をマージ → **結合＝統合テスト**（seed admin でログイン→社員登録画面の通し確認）
 - [ ] ゲート②レビュー（つなぎ目 + CSRF/CORS/H2 方針を梶田さんと確定）※並行
-- [ ] `work-decomposition` → `docs/units/unit_a|b|c.md`（依存図・Phase）
-- [ ] A → B を TDD → 結合 → `multi-agent-review`
+- [ ] B/C 結合 → 全体 `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
 - ✅ monorepo 構造: `packages/{backend,frontend,infra}` + ルート `package.json`（scripts 実体化済み）
@@ -143,11 +148,17 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> 共通基盤は develop に反映済み（commit `6f709b7`）。作業ブランチは **`feature/unit-a-employee`**（develop 最新から分岐・push 済み）。
-> 梶田さんは `git pull` → `npm run setup` → `npm run dev:sagemaker` で共通基盤を受け取れる。
-1. **← 今ここ: Unit A（ユーザー管理）を SDD `design` スキルから開始** — ドメイン/API/DB/画面を設計 → Plan 承認 → TDD。Flyway は **V2**。employee テーブルは共通基盤で確定済み（Entity/Repository あり）
-   - ⚠️ ログイン実装時に **CSRF/CORS/H2 の方針を確定**する → [docs/design/security-hardening-todo.md](docs/design/security-hardening-todo.md)
-2. ゲート②レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番 + CSRF/CORS/H2 を梶田さんと確定）※Unit A と並行可
-3. `work-decomposition` → `docs/units/unit_a|b|c.md` → A→B を TDD → 結合 → `multi-agent-review`
+> Unit A 実装完了・`multi-agent-review` Approve 済み。作業ブランチ **`feature/unit-a-employee`**。
+> **認証ユニットは別メンバーが実装済み** → これをマージして結合（統合テスト）するのが次の一手。
+1. **← 今ここ: Unit A を push** → 認証ユニットをマージ → **結合＝統合テスト**
+   - 目標の通し確認: **seed の admin@example.com / `password` でログイン → 社員登録画面（`/employees/new`）で 2 人目を登録**
+2. ⚠️ **結合時の既知のつなぎ目（Unit A 側で判明）**: Unit A の社員 API は保護済み（`@PreAuthorize` ADMIN のみ）だが、
+   **単体では認証手段が未配線のため全リクエストが 403**（`SecurityConfig` に `formLogin`/`httpBasic` なし・`UserDetailsService` 未実装）。
+   認証ユニットが **①employee を読む `UserDetailsService`（email + BCrypt 照合）②セッション確立 ③CSRF の扱い（合意=無効化+根拠）** を入れて初めて画面から登録が通る。
+   ADMIN でログインしないと 403 のまま（MEMBER では登録画面は弾かれる＝仕様どおり）。
+3. ゲート②レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番 + CSRF/CORS/H2 を確定）
+4. B/C 結合 → 全体 `multi-agent-review`
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
+> ⚠️ 認証テストの罠（Unit A で判明・次 Unit も同様）: SB4 の `@WebMvcTest`/`@SpringBootTest` は `@WithMockUser` を自動適用しない →
+> `webAppContextSetup(context).apply(springSecurity()).build()` で MockMvc を明示構築する（詳細はメモリ `sb4-mockmvc-security-test`）。
