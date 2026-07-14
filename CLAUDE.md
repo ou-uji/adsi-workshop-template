@@ -115,8 +115,13 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
   - backend 29 tests 緑（Service10/Controller11/統合3 + 既存5）・frontend lint/build 通過
   - **共通領域の変更は 2 点のみ**: `SecurityConfig` に `@EnableMethodSecurity` / `GlobalExceptionHandler` に `AccessDeniedException→403`
 - [x] **`multi-agent-review`（java/ts/security/test）→ Approve**（MEDIUM 1件=passwordHash JSON検証を取込・再テスト緑）→ [docs/design/unit/a-employee-review.md](docs/design/unit/a-employee-review.md)
-- [ ] **← 今ここ: Unit A を push** → 認証ユニット（別メンバー実装済み）をマージ → **結合＝統合テスト**（seed admin でログイン→社員登録画面の通し確認）
-- [ ] ゲート②レビュー（つなぎ目 + CSRF/CORS/H2 方針を梶田さんと確定）※並行
+- [x] **Unit A を push**（`feature/unit-a-employee`、commit `eaebe72`）
+- [x] **Unit D 認証（別メンバー実装）をマージ → 結合＝統合テスト完了**（ブランチ `feature/IT_A_and_D`・2026-07-14）
+  - Unit D 実体: `auth/`（AuthController・CustomUserDetailsService・login/logout/me）+ frontend `features/auth`・`/login` 画面。`SecurityConfig` は本実装（`/api/auth/login` 許可・employees=ADMIN・CSRF disable・401/403 JSON ハンドラ・H2 frameOptions sameOrigin）
+  - **結合テスト** [docs/IT/auth-employee-integration.md](docs/IT/auth-employee-integration.md) / `integration/AuthEmployeeIntegrationTest`（commit `b752cd2`）: 実ログインセッションで社員 CRUD を通す **7 ケース全緑**（ADMIN 通し / MEMBER 403 / 未認証 401 / ログアウト後 401 / 不正ログイン 401 / 新社員ログイン）
+  - **backend 全 48 tests 緑**（`--rerun-tasks` で裏取り済み）・frontend lint 通過
+  - → 単体では 403 だった Unit A 社員 API が、認証（UserDetails=email+BCrypt + セッション）で通ることを実証
+- [ ] **← 今ここ: `feature/IT_A_and_D` を push → PR（develop へ）**。ゲート②（CSRF/CORS/H2 は Unit D で確定済み → 追認）
 - [ ] B/C 結合 → 全体 `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
@@ -148,17 +153,13 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> Unit A 実装完了・`multi-agent-review` Approve 済み。作業ブランチ **`feature/unit-a-employee`**。
-> **認証ユニットは別メンバーが実装済み** → これをマージして結合（統合テスト）するのが次の一手。
-1. **← 今ここ: Unit A を push** → 認証ユニットをマージ → **結合＝統合テスト**
-   - 目標の通し確認: **seed の admin@example.com / `password` でログイン → 社員登録画面（`/employees/new`）で 2 人目を登録**
-2. ⚠️ **結合時の既知のつなぎ目（Unit A 側で判明）**: Unit A の社員 API は保護済み（`@PreAuthorize` ADMIN のみ）だが、
-   **単体では認証手段が未配線のため全リクエストが 403**（`SecurityConfig` に `formLogin`/`httpBasic` なし・`UserDetailsService` 未実装）。
-   認証ユニットが **①employee を読む `UserDetailsService`（email + BCrypt 照合）②セッション確立 ③CSRF の扱い（合意=無効化+根拠）** を入れて初めて画面から登録が通る。
-   ADMIN でログインしないと 403 のまま（MEMBER では登録画面は弾かれる＝仕様どおり）。
-3. ゲート②レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番 + CSRF/CORS/H2 を確定）
-4. B/C 結合 → 全体 `multi-agent-review`
+> Unit A + Unit D 認証を結合済み。作業ブランチ **`feature/IT_A_and_D`**（commit `b752cd2`）。backend 48 tests 緑。
+> Unit A 単体で 403 だった社員 API は、認証（UserDetails=email+BCrypt + セッション）を通して動くことを結合テストで実証済み。
+1. **← 今ここ: `feature/IT_A_and_D` を push → PR（develop へ）**
+   - ブラウザ通し確認（任意）: `npm run dev:sagemaker` → `/login` で **admin@example.com / `password`** → ダッシュボード → 社員管理 → `/employees/new` で 2 人目登録
+2. ゲート②: つなぎ目（employeeテーブル/Enum/API規約/Flyway連番）+ **CSRF/CORS/H2 は Unit D の `SecurityConfig` で確定済み**（CSRF disable・H2 frameOptions sameOrigin・401/403 JSON）→ 追認するだけ
+3. B/C 結合 → 全体 `multi-agent-review`
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
-> ⚠️ 認証テストの罠（Unit A で判明・次 Unit も同様）: SB4 の `@WebMvcTest`/`@SpringBootTest` は `@WithMockUser` を自動適用しない →
-> `webAppContextSetup(context).apply(springSecurity()).build()` で MockMvc を明示構築する（詳細はメモリ `sb4-mockmvc-security-test`）。
+> ⚠️ 認証テストの罠（Unit A/D で判明・次 Unit も同様）: SB4 の `@WebMvcTest`/`@SpringBootTest` は `@WithMockUser` を自動適用しない →
+> `webAppContextSetup(context).apply(springSecurity()).build()` で MockMvc を明示構築する（結合テストは実ログインセッション方式・詳細はメモリ `sb4-mockmvc-security-test`）。
