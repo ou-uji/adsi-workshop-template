@@ -94,11 +94,11 @@ export class AttendanceStack extends cdk.Stack {
         BACKEND_URL: "http://localhost:8080",
       },
       healthCheck: {
-        command: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"],
+        command: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""],
         interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(5),
-        retries: 3,
-        startPeriod: cdk.Duration.seconds(30),
+        timeout: cdk.Duration.seconds(10),
+        retries: 5,
+        startPeriod: cdk.Duration.seconds(60),
       },
     });
 
