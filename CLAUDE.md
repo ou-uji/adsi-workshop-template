@@ -10,7 +10,7 @@
 **勤怠管理システム（小規模デモ）** — Day 2 のチーム共同開発で「1 から作る」。
 スライド ⑥「チーム開発の考え方」を実践：**機能で分担 / つなぎ目(IF)を先に合意 / 共通基盤を先行**。
 
-- **ブランチ**: `feature/ou-draft-idea`（`develop` から分岐・push 済み）
+- **ブランチ**: 共通基盤は `develop` に反映済み（commit `6f709b7`）。現在の作業ブランチ = **`feature/unit-a-employee`**（Unit A / develop 最新から分岐・push 済み）
 - **実行環境**: AWS SageMaker Code Editor / `ml.t3.2xlarge`（8vCPU/32GiB）/ Image `code-editor-java-claude v3`
 - **チーム**: 経験者は代表（あなた）。他メンバーは Java 本格開発の経験が浅い → 「迷子にならない」を最優先
 - **デモゴール**: ログイン → 打刻 → 履歴 → 休暇1件申請 をブラウザ(absports)で通し実演（承認実演は余力があれば）
@@ -105,9 +105,14 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - [x] **共通基盤 Phase 2（TDD 実装）完了**（起動 + 画面枠 + テスト5本緑・verify 通過）
 - [x] **README.md 作成**（目標UI To-Be・起動/プレビュー手順・トラブルシュート）
 - [x] **develop へマージ・push 完了**（`feature/ou-draft-idea` → `develop` を fast-forward、commit `77f7ca7`）
-- [ ] **← 今ここ: 梶田さんに共有 → ゲート②レビュー → 分担スタート**
+- [x] **共通基盤コードを `multi-agent-review`（java/ts/security/test）→ Approve**（実在ブロッカーなし・2026-07-14）
+- [x] **セキュリティ積み残しを別機能に切り出し**（CSRF/CORS/H2=雛形TODO）→ `docs/design/security-hardening-todo.md`（commit `6f709b7`・develop push 済み）
+- [x] **梶田さんへ共有メッセージ送付**（受け取り手順・つなぎ目・ゲート②論点）
+- [x] **Unit A ブランチ作成・push**（`feature/unit-a-employee`、develop 最新から分岐）
+- [ ] **← 今ここ: Unit A（ユーザー管理）を SDD `design` から実装開始**（別 Window で作業）
+- [ ] ゲート②レビュー（つなぎ目 + CSRF/CORS/H2 方針を梶田さんと確定）※並行
 - [ ] `work-decomposition` → `docs/units/unit_a|b|c.md`（依存図・Phase）
-- [ ] 午後 A → B を TDD → 結合 → `multi-agent-review`
+- [ ] A → B を TDD → 結合 → `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
 - ✅ monorepo 構造: `packages/{backend,frontend,infra}` + ルート `package.json`（scripts 実体化済み）
@@ -138,10 +143,11 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> 共通基盤は develop に反映済み（commit `77f7ca7`）。梶田さんは `git pull` → `npm run setup` → `npm run dev:sagemaker` で受け取れる。
-1. 梶田さんに共有し、**ゲート②（設計承認）**レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番を固定）＋設計書 §4 の `[Answer]` を埋める
-   - ⚠️ ここで **CSRF/CORS/H2 の方針も確定**する → [docs/design/security-hardening-todo.md](docs/design/security-hardening-todo.md)（別機能として Unit A ログインで実装）
-2. ~~（任意）`multi-agent-review` で共通基盤コードをレビュー~~ → **実施済み（2026-07-14）: Approve（実在ブロッカーなし）**。HIGH 指摘は SecurityConfig 雛形 TODO（上記へ切り出し）＋テストの穴3本（existsByEmail / GlobalExceptionHandler / 保護ルート403）
-3. `work-decomposition` → `docs/units/unit_a|b|c.md` → 午後 A→B を TDD
+> 共通基盤は develop に反映済み（commit `6f709b7`）。作業ブランチは **`feature/unit-a-employee`**（develop 最新から分岐・push 済み）。
+> 梶田さんは `git pull` → `npm run setup` → `npm run dev:sagemaker` で共通基盤を受け取れる。
+1. **← 今ここ: Unit A（ユーザー管理）を SDD `design` スキルから開始** — ドメイン/API/DB/画面を設計 → Plan 承認 → TDD。Flyway は **V2**。employee テーブルは共通基盤で確定済み（Entity/Repository あり）
+   - ⚠️ ログイン実装時に **CSRF/CORS/H2 の方針を確定**する → [docs/design/security-hardening-todo.md](docs/design/security-hardening-todo.md)
+2. ゲート②レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番 + CSRF/CORS/H2 を梶田さんと確定）※Unit A と並行可
+3. `work-decomposition` → `docs/units/unit_a|b|c.md` → A→B を TDD → 結合 → `multi-agent-review`
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
