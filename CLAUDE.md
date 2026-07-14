@@ -129,6 +129,7 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 ### 📁 成果物の場所
 - **README（起動手順・目標UI To-Be）**: [README.md](README.md)
 - **共通基盤 設計書（SDD）**: [docs/design/common-foundation.md](docs/design/common-foundation.md) ★ゲート②レビュー対象
+- **セキュリティ積み残し（別機能で実装）**: [docs/design/security-hardening-todo.md](docs/design/security-hardening-todo.md) ← SecurityConfig の CSRF/CORS/H2 は雛形 TODO。ゲート②で方針確定 → Unit A ログインで実装
 - 共通基盤 コード雛形: [packages/backend/src/main/java/com/example/attendance/common/](packages/backend/src/main/java/com/example/attendance/common/)
 - 確定要求: [docs/requirements/ou-attendance.md](docs/requirements/ou-attendance.md)
 - 実装方針: [docs/requirements/implementation-strategy.md](docs/requirements/implementation-strategy.md)
@@ -139,7 +140,8 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 ### ▶️ 次にやること（新セッション）
 > 共通基盤は develop に反映済み（commit `77f7ca7`）。梶田さんは `git pull` → `npm run setup` → `npm run dev:sagemaker` で受け取れる。
 1. 梶田さんに共有し、**ゲート②（設計承認）**レビュー（つなぎ目=employeeテーブル/Enum/API規約/Flyway連番を固定）＋設計書 §4 の `[Answer]` を埋める
-2. （任意）`multi-agent-review` で共通基盤コードをレビュー
+   - ⚠️ ここで **CSRF/CORS/H2 の方針も確定**する → [docs/design/security-hardening-todo.md](docs/design/security-hardening-todo.md)（別機能として Unit A ログインで実装）
+2. ~~（任意）`multi-agent-review` で共通基盤コードをレビュー~~ → **実施済み（2026-07-14）: Approve（実在ブロッカーなし）**。HIGH 指摘は SecurityConfig 雛形 TODO（上記へ切り出し）＋テストの穴3本（existsByEmail / GlobalExceptionHandler / 保護ルート403）
 3. `work-decomposition` → `docs/units/unit_a|b|c.md` → 午後 A→B を TDD
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
