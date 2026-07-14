@@ -79,6 +79,7 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - **employeeId**: Long の DB 自動採番。email は一意（ログイン ID 兼用）
 - **打刻**: サーバー現在時刻を記録（手入力なし）
 - **休暇**: 状態遷移 `PENDING → APPROVED/REJECTED`
+- **AWS リソース名**: 全リソースに **`Team-MIH-MSYS-Kintai`** プレフィックスを付与（S3 は小文字 `team-mih-msys-kintai-`）
 - **スコープ外(YAGNI)**: 月次集計/CSV/PDF、勤怠計算、通知、監査ログ、パスワードリセット/MFA/OAuth、本格 RBAC
 
 ---
