@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -50,6 +51,19 @@ public class GlobalExceptionHandler {
                 .map(fe -> new FieldError(fe.getField(), fe.getDefaultMessage()))
                 .toList();
         return build(HttpStatus.BAD_REQUEST, "入力内容に誤りがあります", request, fieldErrors);
+    }
+
+    /**
+     * 認可拒否（メソッドセキュリティの {@code @PreAuthorize} 等）→ 403。
+     *
+     * <p>{@code AuthorizationDeniedException} は {@link AccessDeniedException} のサブクラス。
+     * これを捕まえないと {@link #handleUnexpected} が 500 に変換してしまう。ADMIN 限定 API
+     * （Unit A の社員管理・Unit C の休暇承認など）で権限外アクセスを 403 で返すために必要。</p>
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "この操作を行う権限がありません", request, List.of());
     }
 
     /** 想定外の例外 → 500（詳細はログのみ、クライアントには汎用メッセージ） */
