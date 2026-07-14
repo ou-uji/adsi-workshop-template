@@ -67,6 +67,18 @@ public class Employee {
         this.role = role;
     }
 
+    /**
+     * プロフィール（氏名・email・role）を更新する。
+     *
+     * <p>passwordHash は変更しない（パスワード変更は Unit A のスコープ外 = YAGNI）。
+     * 列・テーブル定義（Flyway V1）は変えず、更新可能な属性のみを対象にする。</p>
+     */
+    public void updateProfile(String name, String email, Role role) {
+        this.name = name;
+        this.email = email;
+        this.role = role;
+    }
+
     @PrePersist
     void onCreate() {
         OffsetDateTime now = OffsetDateTime.now();
