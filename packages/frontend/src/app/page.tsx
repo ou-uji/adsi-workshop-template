@@ -9,7 +9,7 @@ import { HealthBadge } from "@/features/health/HealthBadge";
 const UNITS = [
   { key: "auth", title: "ログイン", desc: "認証（Unit D）", owner: "共通基盤", href: null, done: true },
   { key: "employee", title: "社員管理", desc: "登録・一覧・編集（Unit A）", owner: "メンバー1", href: "/employees", done: true },
-  { key: "attendance", title: "勤怠打刻", desc: "出勤・退勤・履歴（Unit B）", owner: "メンバー2", href: null, done: false },
+  { key: "attendance", title: "勤怠打刻", desc: "出勤・退勤・履歴（Unit B）", owner: "メンバー2", href: "/attendance", done: true },
   { key: "leave", title: "休暇申請", desc: "申請・承認（Unit C）", owner: "経験者/ペア", href: null, done: false },
 ] as const;
 
