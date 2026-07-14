@@ -125,7 +125,17 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - [x] **`feature/IT_A_and_D` を push → develop マージ完了**（2026-07-14 15:30 発表前）
   - ブラウザ通し確認済み: ログイン → ダッシュボード → 社員管理（一覧/登録/編集）
   - CSRF/CORS/H2 は Unit D で確定済み（CSRF disable・H2 frameOptions sameOrigin・401/403 JSON）
-- [ ] **← 今ここ: IaC（AWS デプロイ）着手**
+- [x] **IaC（AWS CDK）実装完了** — ECS Fargate (backend + frontend) + ALB + VPC
+  - CDK スタック: `packages/infra/lib/attendance-stack.ts`
+  - Backend Dockerfile: `packages/backend/Dockerfile`（multi-stage, `--network=sagemaker`）
+  - Frontend Dockerfile: `packages/frontend/Dockerfile`（Next.js standalone）
+  - 命名: `Team-MIH-MSYS-Kintai` プレフィックス
+- [x] **Unit B（勤怠打刻）** メンバー実装 → main マージ済み（2026-07-14）
+- [ ] **← 今ここ: AWS デプロイ中（Frontend Service の health check 問題調査中）**
+  - Docker image の ECR push は成功済み
+  - CFN create-stack は実行済みだが Frontend ECS Service が stabilize しない
+  - 原因推定: Next.js standalone が port 3000 で正常応答していない可能性
+  - 次のアクション: ローカルで Docker コンテナ起動テスト → 修正 → delete → recreate
 - [ ] B/C 結合 → 全体 `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
@@ -157,10 +167,20 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> Unit A + D 結合済み・develop マージ済み。backend 48 tests 緑。ブラウザ通し確認済み。
-1. **← 今ここ: IaC（AWS デプロイ）着手** — CDK / ECS / S3+CloudFront でデモ環境を構築
-2. B/C 実装・結合（余力があれば）
-3. 全体 `multi-agent-review`
+> Unit A + D + B 結合済み・main マージ済み。IaC CDK 実装済み。AWS デプロイは Frontend health check 問題で停滞中。
+1. **← 今ここ: Frontend ECS health check 問題を解決 → delete → recreate**
+   - ローカルで `docker run` してコンテナ内で Next.js standalone が :3000 で応答するか確認
+   - 問題切り分け: ALB target group health check（`/` → 200 が必要）vs ECS container health check
+   - 修正後: スタック delete → `aws cloudformation create-stack` で recreate
+   - 詳細手順: [deploy/AWSへのデプロイ試行錯誤ノウハウ.md](deploy/AWSへのデプロイ試行錯誤ノウハウ.md)
+2. デプロイ成功したら ALB URL でブラウザ動作確認
+3. C（休暇）結合 → 全体 `multi-agent-review`
+
+> **AWS デプロイの正しい手順（SageMaker 2 段階方式）**:
+> 1. `npx cdk deploy --role-arn <deploy-role>` → PassRole エラーで止まるが **ECR push は完了**
+> 2. deploy role を assume → `aws cloudformation create-stack --template-body file://cdk.out/... --role-arn <cfn-exec-role>`
+> 3. `aws cloudformation wait stack-create-complete`
+> 詳細: [deploy/AWSへのデプロイ試行錯誤ノウハウ.md](deploy/AWSへのデプロイ試行錯誤ノウハウ.md)
 
 > 起動: `npm run boot:workshop`（backend単体） / `npm run dev:sagemaker`（フル・プレビュー、PORTS 3000 地球儀→`ports`を`absports`置換）
 > ⚠️ 認証テストの罠（Unit A/D で判明・次 Unit も同様）: SB4 の `@WebMvcTest`/`@SpringBootTest` は `@WithMockUser` を自動適用しない →

@@ -1,6 +1,9 @@
 {
-  "model": "global.anthropic.claude-opus-4-6-v1[1m]",
   "permissions": {
-    "defaultMode": "auto"
-  }
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(bash -c ' *)"
+    ]
+  },
+  "model": "global.anthropic.claude-opus-4-6-v1[1m]"
 }
