@@ -3,7 +3,6 @@
 import { useAuth } from "@/features/auth/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { withBasePath } from "@/lib/api-client";
 import { HealthBadge } from "@/features/health/HealthBadge";
 
 const UNITS = [
@@ -19,7 +18,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(withBasePath("/login"));
+      router.push("/login");
     }
   }, [loading, user, router]);
 
@@ -52,7 +51,7 @@ export default function DashboardPage() {
             <button
               onClick={async () => {
                 await logout();
-                router.push(withBasePath("/login"));
+                router.push("/login");
               }}
               className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >

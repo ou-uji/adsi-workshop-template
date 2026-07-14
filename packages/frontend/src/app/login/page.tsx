@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useAuth } from "@/features/auth/auth-context";
 import { useRouter } from "next/navigation";
-import { withBasePath } from "@/lib/api-client";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -20,7 +19,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push(withBasePath("/"));
+      router.push("/");
     } catch {
       setError("メールまたはパスワードが正しくありません");
     } finally {
