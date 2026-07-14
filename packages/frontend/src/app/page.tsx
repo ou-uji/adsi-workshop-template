@@ -4,12 +4,13 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { HealthBadge } from "@/features/health/HealthBadge";
+import Link from "next/link";
 
 const UNITS = [
-  { key: "auth", title: "ログイン", desc: "認証（Unit D）", owner: "共通基盤", done: true },
-  { key: "employee", title: "社員管理", desc: "登録・一覧（Unit A）", owner: "メンバー1", done: false },
-  { key: "attendance", title: "勤怠打刻", desc: "出勤・退勤・履歴（Unit B）", owner: "メンバー2", done: false },
-  { key: "leave", title: "休暇申請", desc: "申請・承認（Unit C）", owner: "経験者/ペア", done: false },
+  { key: "auth", title: "ログイン", desc: "認証（Unit D）", owner: "共通基盤", done: true, href: null },
+  { key: "employee", title: "社員管理", desc: "登録・一覧（Unit A）", owner: "メンバー1", done: false, href: null },
+  { key: "attendance", title: "勤怠打刻", desc: "出勤・退勤・履歴（Unit B）", owner: "メンバー2", done: true, href: "/attendance" },
+  { key: "leave", title: "休暇申請", desc: "申請・承認（Unit C）", owner: "経験者/ペア", done: false, href: null },
 ] as const;
 
 export default function DashboardPage() {
@@ -66,23 +67,38 @@ export default function DashboardPage() {
           機能メニュー
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {UNITS.map((unit) => (
-            <section
-              key={unit.key}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <h3 className="font-semibold">{unit.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">{unit.desc}</p>
-              <p className="mt-3 text-xs text-slate-400">担当: {unit.owner}</p>
-              <p className={`mt-2 inline-block rounded px-2 py-0.5 text-xs ${
-                unit.done
-                  ? "bg-green-100 text-green-700"
-                  : "bg-slate-100 text-slate-500"
-              }`}>
-                {unit.done ? "実装済み" : "未実装"}
-              </p>
-            </section>
-          ))}
+          {UNITS.map((unit) => {
+            const content = (
+              <>
+                <h3 className="font-semibold">{unit.title}</h3>
+                <p className="mt-1 text-sm text-slate-600">{unit.desc}</p>
+                <p className="mt-3 text-xs text-slate-400">担当: {unit.owner}</p>
+                <p className={`mt-2 inline-block rounded px-2 py-0.5 text-xs ${
+                  unit.done
+                    ? "bg-green-100 text-green-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}>
+                  {unit.done ? "実装済み" : "未実装"}
+                </p>
+              </>
+            );
+            return unit.href ? (
+              <Link
+                key={unit.key}
+                href={unit.href}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow"
+              >
+                {content}
+              </Link>
+            ) : (
+              <section
+                key={unit.key}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                {content}
+              </section>
+            );
+          })}
         </div>
       </main>
 
