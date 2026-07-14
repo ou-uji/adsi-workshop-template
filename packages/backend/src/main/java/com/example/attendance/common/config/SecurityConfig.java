@@ -1,28 +1,18 @@
 package com.example.attendance.common.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * 認証（最小構成）の共通設定 — 雛形。
- *
- * <p>方針（`.claude/rules/security.md` / `java-spring-boot.md` SB4 互換）:</p>
- * <ul>
- *   <li>{@code SecurityFilterChain} Bean 方式（{@code WebSecurityConfigurerAdapter} 禁止）</li>
- *   <li>{@code authorizeHttpRequests} / {@code requestMatchers}（旧 API 禁止）</li>
- *   <li>パスワードは {@link BCryptPasswordEncoder} でハッシュ化</li>
- *   <li>デフォルト拒否 + 許可パスをホワイトリスト</li>
- * </ul>
- *
- * <p>⚠️ 雛形段階。ログイン方式（フォーム/セッション）・保護ルート・CORS は
- * design / 実装フェーズで確定する（TODO を参照）。</p>
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // メソッドセキュリティ有効化（各ドメインの @PreAuthorize を使う。Unit A: 社員管理=ADMIN のみ）
@@ -34,16 +24,44 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // TODO(design): 許可パスのホワイトリストを確定する
-                //   例: ログイン API・H2 コンソール（workshop）・静的資産のみ permitAll、他は authenticated
-                .requestMatchers("/api/health", "/api/auth/**", "/h2-console/**").permitAll()
-                .anyRequest().authenticated()
-            );
-            // TODO(design): ログイン方式（formLogin / セッション）、ログアウト、CORS、
-            //   H2 コンソール表示のための frameOptions 無効化などを実装フェーズで追加する。
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/api/leaves/pending").hasRole("ADMIN")
+                .requestMatchers("/api/leaves/*/approve").hasRole("ADMIN")
+                .requestMatchers("/api/leaves/*/reject").hasRole("ADMIN")
+                .requestMatchers("/api/employees/**").hasRole("ADMIN")
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, authEx) -> {
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json;charset=UTF-8");
+                    res.getWriter().write(
+                        "{\"error\":\"UNAUTHORIZED\",\"message\":\"ログインが必要です\"}");
+                })
+                .accessDeniedHandler((req, res, accessEx) -> {
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.setContentType("application/json;charset=UTF-8");
+                    res.getWriter().write(
+                        "{\"error\":\"FORBIDDEN\",\"message\":\"この操作には管理者権限が必要です\"}");
+                })
+            )
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+
         return http.build();
     }
 }
