@@ -193,6 +193,44 @@ docker run --rm --network=sagemaker --entrypoint sh <image> -c '
 
 ---
 
+### 10. Frontend Service が長時間 stabilize しない（#8 修正後も残る）★解決
+
+**症状**: Dockerfile を直して（#8）コンテナがローカルで完全に動くのに、ECS では
+Backend は 90 秒で `CREATE_COMPLETE` する一方、**Frontend Service が 20 分以上
+`CREATE_IN_PROGRESS` のまま**（放置すると最終的に「Exceeded attempts to wait」→ ROLLBACK）。
+SageMaker の IAM ロックで ECS タスク状態も CloudWatch Logs も一切読めず（deploy role /
+SageMaker role / cfn-exec chain assume すべて AccessDenied）**根本原因を直接観測できない**。
+
+**原因（推定）**: 起動直後から ALB / ECS の health check が即カウント開始し、
+Next.js が Ready になる前に unhealthy 判定 → ECS がタスクを kill → 無限リサイクル。
+`healthCheckGracePeriod` 未設定 + ECS container health check（`node -e fetch`）の
+二重判定が失敗確率を上げていた。
+
+**解決（health check の緩和 3 点）** → これで Frontend も **起動から約 1 分で stabilize**:
+```ts
+// 1. FargateService に起動猶予を追加（本命）
+new ecs.FargateService(this, "FrontendService", {
+  ...,
+  healthCheckGracePeriod: cdk.Duration.seconds(180),
+});
+
+// 2. ECS container health check（node -e fetch）は撤去し、判定源を ALB TG に一本化
+
+// 3. ALB Target Group を寛容化
+frontendTG.healthCheck = {
+  path: "/",
+  healthyHttpCodes: "200-399",   // クライアント側リダイレクト前でも / は 200
+  timeout: cdk.Duration.seconds(10),
+  unhealthyThresholdCount: 5,
+};
+```
+
+**教訓**: observability が断たれた環境では「観測して直す」が不可能。
+ローカルでコンテナ健全性（起動・`/`=200・static=200）を実証したうえで、
+**ECS/Fargate 固有の起動猶予・health check を先に堅牢化**するのが最短。
+
+---
+
 ## 最終的に動いたデプロイ手順（2 段階方式）
 
 ```bash

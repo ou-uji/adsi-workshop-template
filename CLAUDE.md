@@ -131,12 +131,17 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
   - Frontend Dockerfile: `packages/frontend/Dockerfile`（Next.js standalone）
   - 命名: `Team-MIH-MSYS-Kintai` プレフィックス
 - [x] **Unit B（勤怠打刻）** メンバー実装 → main マージ済み（2026-07-14）
-- [ ] **← 今ここ: AWS デプロイ中（Frontend Service の health check 問題調査中）**
-  - Docker image の ECR push は成功済み
-  - CFN create-stack は実行済みだが Frontend ECS Service が stabilize しない
-  - 原因推定: Next.js standalone が port 3000 で正常応答していない可能性
-  - 次のアクション: ローカルで Docker コンテナ起動テスト → 修正 → delete → recreate
-- [ ] B/C 結合 → 全体 `multi-agent-review`
+- [x] **AWS デプロイ成功**（2026-07-15・ブランチ `feature/fix-frontend-dockerfile-standalone`）
+  - **AppURL**: http://MIH-MSYS-Kintai-ALB-116959375.ap-northeast-1.elb.amazonaws.com
+  - 疎通確認済み: `GET /`=200 / `GET /api/health`={"status":"ok"} / `GET /login`=200
+  - **原因①（真因）**: monorepo で Next.js standalone が `.next/standalone/app/server.js` に出力される
+    のに Dockerfile が親をコピー → `/app/app/server.js` になり `CMD node server.js` が即クラッシュ
+    → Frontend が起動せず ECS Service が stabilize せず ROLLBACK。**Dockerfile のコピー元を修正**
+  - **原因②**: `healthCheckGracePeriod` 未設定 + ECS container health check の二重判定で
+    Ready 前に unhealthy → kill → 無限リサイクル。**grace 180s / container HC 撤去 / ALB TG 寛容化(200-399)**
+  - ローカル docker で起動・`/`=200・static=200 を実証してから修正（ECS/Logs は IAM ロックで観測不能）
+  - 詳細: [deploy/AWSへのデプロイ試行錯誤ノウハウ.md](deploy/AWSへのデプロイ試行錯誤ノウハウ.md) #8〜#10
+- [ ] **← 今ここ**: デプロイ修正ブランチを develop/main へマージ → C（休暇）結合 → 全体 `multi-agent-review`
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
 - ✅ monorepo 構造: `packages/{backend,frontend,infra}` + ルート `package.json`（scripts 実体化済み）
@@ -167,13 +172,12 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
 ### ▶️ 次にやること（新セッション）
-> Unit A + D + B 結合済み・main マージ済み。IaC CDK 実装済み。AWS デプロイは Frontend health check 問題で停滞中。
-1. **← 今ここ: Frontend ECS health check 問題を解決 → delete → recreate**
-   - ローカルで `docker run` してコンテナ内で Next.js standalone が :3000 で応答するか確認
-   - 問題切り分け: ALB target group health check（`/` → 200 が必要）vs ECS container health check
-   - 修正後: スタック delete → `aws cloudformation create-stack` で recreate
-   - 詳細手順: [deploy/AWSへのデプロイ試行錯誤ノウハウ.md](deploy/AWSへのデプロイ試行錯誤ノウハウ.md)
-2. デプロイ成功したら ALB URL でブラウザ動作確認
+> Unit A + D + B 結合済み・main マージ済み。IaC CDK 実装済み。**AWS デプロイ成功**（2026-07-15）。
+> AppURL: http://MIH-MSYS-Kintai-ALB-116959375.ap-northeast-1.elb.amazonaws.com
+1. **← 今ここ: デプロイ修正ブランチ `feature/fix-frontend-dockerfile-standalone` を develop/main へマージ**
+   - 内容: Dockerfile standalone コピー元修正 + Frontend health check 緩和 + ノウハウ #8〜#10
+   - ⚠️ 稼働中スタックは課金される。ワークショップ後は delete 推奨（deploy role assume → `delete-stack`）
+2. ブラウザで ALB URL を開き、ログイン → 打刻 → 履歴 まで通し確認
 3. C（休暇）結合 → 全体 `multi-agent-review`
 
 > **AWS デプロイの正しい手順（SageMaker 2 段階方式）**:
