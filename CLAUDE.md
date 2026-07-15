@@ -141,7 +141,18 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
     Ready 前に unhealthy → kill → 無限リサイクル。**grace 180s / container HC 撤去 / ALB TG 寛容化(200-399)**
   - ローカル docker で起動・`/`=200・static=200 を実証してから修正（ECS/Logs は IAM ロックで観測不能）
   - 詳細: [deploy/AWSへのデプロイ試行錯誤ノウハウ.md](deploy/AWSへのデプロイ試行錯誤ノウハウ.md) #8〜#10
-- [ ] **← 今ここ**: デプロイ修正ブランチを develop/main へマージ → C（休暇）結合 → 全体 `multi-agent-review`
+  - ブラウザで ALB URL のログイン画面を表示確認済み（2026-07-15）
+- [x] **デプロイ修正を develop/main へマージ・push 完了**（2026-07-15・`b2c2873`）
+  - `feature/fix-frontend-dockerfile-standalone` の3コミット（Dockerfile 修正 / health check 緩和 / docs）を
+    main・develop 両方へ ff マージ → origin へ push 済み（main `778d96c..b2c2873` / develop `f9c0611..b2c2873`）
+
+### 🏁 研修終了時点の状態（2026-07-15）
+- **研修は終了**。翌日（2026-07-16 予定）に本 SageMaker インスタンスが削除される見込み。
+- コードは origin（GitHub `ou-uji/adsi-workshop-template`）の main/develop に全て push 済み → インスタンス削除後も残る。
+- ⚠️ **AWS スタック `Team-MIH-MSYS-Kintai` は稼働したまま**（ECS Fargate ×2 + ALB + VPC）。放置すると課金継続。
+  - インスタンス削除後は deploy role を assume する踏み台が失われる可能性 → **停止するなら本インスタンス生存中に delete 推奨**。
+  - delete 手順: deploy role を assume → `aws cloudformation delete-stack --stack-name Team-MIH-MSYS-Kintai`（ノウハウ #5 参照）。
+- **未着手**: Unit C（休暇+承認）結合、全体 `multi-agent-review`（研修範囲としては打ち切り）。
 
 ### 🧱 共通基盤の作成状況（Phase 2 完了・動く土台）
 - ✅ monorepo 構造: `packages/{backend,frontend,infra}` + ルート `package.json`（scripts 実体化済み）
@@ -171,14 +182,15 @@ A/B/C は **Employee(+認証) にのみ依存し相互依存なし → フル並
 - 比較レポート: [docs/working/requirements/comparison-ou-vs-kajita.md](docs/working/requirements/comparison-ou-vs-kajita.md)
 - Q&A トレイル: [docs/working/requirements/attendance-draft.md](docs/working/requirements/attendance-draft.md)
 
-### ▶️ 次にやること（新セッション）
+### ▶️ 次にやること（研修終了・別環境で再開する場合）
 > Unit A + D + B 結合済み・main マージ済み。IaC CDK 実装済み。**AWS デプロイ成功**（2026-07-15）。
-> AppURL: http://MIH-MSYS-Kintai-ALB-116959375.ap-northeast-1.elb.amazonaws.com
-1. **← 今ここ: デプロイ修正ブランチ `feature/fix-frontend-dockerfile-standalone` を develop/main へマージ**
-   - 内容: Dockerfile standalone コピー元修正 + Frontend health check 緩和 + ノウハウ #8〜#10
-   - ⚠️ 稼働中スタックは課金される。ワークショップ後は delete 推奨（deploy role assume → `delete-stack`）
-2. ブラウザで ALB URL を開き、ログイン → 打刻 → 履歴 まで通し確認
-3. C（休暇）結合 → 全体 `multi-agent-review`
+> 研修は終了、本インスタンスは 2026-07-16 に削除見込み。コードは origin に push 済み。
+> AppURL（スタック生存中のみ）: http://MIH-MSYS-Kintai-ALB-116959375.ap-northeast-1.elb.amazonaws.com
+1. **⚠️ AWS スタック `Team-MIH-MSYS-Kintai` の後始末** — 放置すると課金継続。
+   停止する場合は deploy role assume → `delete-stack`（ノウハウ #5）。インスタンス削除前に実施推奨。
+2. （余力があれば）Unit C（休暇+承認）結合 → 全体 `multi-agent-review`
+3. 別環境で再開する場合: `git clone` → `npm ci` → `npm run dev:sagemaker`（プレビュー）。
+   デプロイは SageMaker 2 段階方式（下記）。observability 制約はノウハウ参照。
 
 > **AWS デプロイの正しい手順（SageMaker 2 段階方式）**:
 > 1. `npx cdk deploy --role-arn <deploy-role>` → PassRole エラーで止まるが **ECR push は完了**
