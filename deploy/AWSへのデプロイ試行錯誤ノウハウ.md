@@ -137,6 +137,62 @@ healthCheck: {
 
 ---
 
+### 8. Frontend コンテナが即クラッシュ（`Cannot find module '/app/server.js'`）★真因
+
+**症状**: health check 対策（7）を入れても Frontend Service が stabilize せず ROLLBACK。
+実際にはコンテナが起動 1 秒で `Exited (1)` していた（health check 以前の問題）。
+
+```
+Error: Cannot find module '/app/server.js'
+```
+
+**原因**: **monorepo では Next.js standalone がワークスペースのパス構造を 1 階層保持する。**
+`.next/standalone/server.js` ではなく **`.next/standalone/app/server.js`** に出力される
+（build context = `packages/frontend`、`turbopack.root` がリポジトリルートに解決されるため）。
+Dockerfile が親の `.next/standalone` を丸ごとコピーしていたので `/app/app/server.js` になり、
+`CMD ["node", "server.js"]`（= `/app/server.js`）が見つからず即死。
+さらに static / public も `/app/.next/static`・`/app/public` に置かれ、server.js（`/app/app` から動く）からは
+参照できず、仮に起動しても CSS/JS が 404 になる二重の不整合だった。
+
+**解決**: standalone の **`app/` の中身**を `/app` に展開し、static / public をそれに整合させる:
+```dockerfile
+# NG（親をコピー → /app/app/server.js になる）
+COPY --from=build /app/.next/standalone ./
+
+# OK（app/ の中身を展開 → /app/server.js になる）
+COPY --from=build --chown=nextjs:nextjs /app/.next/standalone/app ./
+COPY --from=build --chown=nextjs:nextjs /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+```
+
+**教訓**: standalone の出力レイアウトはビルドして `find /app/.next/standalone -name server.js` で必ず実物を確認する。
+
+---
+
+### 9. SageMaker では docker の `-p` / `exec` / `inspect` も封じられている
+
+ローカルでコンテナを検証しようとすると次で全部弾かれる（`--network=sagemaker` 以外も制約が多い）:
+
+| 操作 | 症状 |
+|------|------|
+| `docker run -p 3300:3000` | `Forbidden. [ContainerCreate] ... does not allow Port bindings` |
+| `docker exec <c> ...` | `403 Forbidden for API route ... /exec` |
+| `docker inspect`（NetworkSettings） | IP が `invalid IP` になる |
+| `docker network inspect` | `request ... not allowed on SageMaker Studio` |
+
+**検証の回避策 = コンテナ内で完結させる**。`--entrypoint sh` で CMD を上書きし、
+`node server.js &` でサーバーを起動 → **同一コンテナ内から自己 fetch** すれば proxy を経由せず確認できる:
+```bash
+docker run --rm --network=sagemaker --entrypoint sh <image> -c '
+  node server.js &
+  sleep 3
+  node -e "fetch(\"http://localhost:3000/\").then(r=>console.log(\"HTTP\",r.status))"
+'
+# → GET / -> HTTP 200 / static asset も 200 を確認できる
+```
+
+---
+
 ## 最終的に動いたデプロイ手順（2 段階方式）
 
 ```bash
