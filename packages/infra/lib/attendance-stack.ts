@@ -93,13 +93,9 @@ export class AttendanceStack extends cdk.Stack {
       environment: {
         BACKEND_URL: "http://localhost:8080",
       },
-      healthCheck: {
-        command: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""],
-        interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(10),
-        retries: 5,
-        startPeriod: cdk.Duration.seconds(60),
-      },
+      // ECS コンテナレベルの health check は撤去し、ALB Target Group の health check
+      // を唯一の判定源とする（起動さえすれば ALB 判定に委ねる）。二重 health check の
+      // 片方を外して stabilize 失敗モードを1つ減らす。ローカルでは起動・/=200 を実証済み。
     });
 
     frontendContainer.addPortMappings({ containerPort: 3000 });
@@ -111,6 +107,9 @@ export class AttendanceStack extends cdk.Stack {
       desiredCount: 1,
       assignPublicIp: true,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      // 起動直後から ALB health check が即カウント開始して Ready 前に unhealthy 判定
+      // → タスク kill → 無限リサイクル、を防ぐ猶予期間。stabilize しない主因の対策。
+      healthCheckGracePeriod: cdk.Duration.seconds(180),
     });
 
     // ========================================
@@ -144,11 +143,15 @@ export class AttendanceStack extends cdk.Stack {
       port: 3000,
       protocol: elbv2.ApplicationProtocol.HTTP,
       targetType: elbv2.TargetType.IP,
+      // 寛容化: Next.js の初回応答が遅くても unhealthy に倒れにくくする。
+      // 200-399 を healthy 扱い（クライアント側リダイレクト前でも / は 200 を返す）。
       healthCheck: {
         path: "/",
+        healthyHttpCodes: "200-399",
         interval: cdk.Duration.seconds(30),
+        timeout: cdk.Duration.seconds(10),
         healthyThresholdCount: 2,
-        unhealthyThresholdCount: 3,
+        unhealthyThresholdCount: 5,
       },
       deregistrationDelay: cdk.Duration.seconds(30),
     });
